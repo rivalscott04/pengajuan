@@ -16,6 +16,11 @@ class SubmissionDocument extends Model
         'original_name',
         'mime_type',
         'size',
+        'is_verified',
+    ];
+
+    protected $casts = [
+        'is_verified' => 'boolean',
     ];
 
     public function submission()

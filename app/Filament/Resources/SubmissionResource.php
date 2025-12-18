@@ -308,10 +308,24 @@ class SubmissionResource extends Resource
                     ->url(fn(Submission $record) => static::getUrl('edit', ['record' => $record]))
                     ->visible(fn(Submission $record) => static::canEditRecord($record, Auth::user())),
                 Action::make('submit')
-                    ->label('Ajukan')
+                    ->label(fn(Submission $record) => $record->status === Submission::STATUS_DIKEMBALIKAN ? 'Ajukan Ulang' : 'Ajukan')
                     ->color('warning')
                     ->requiresConfirmation()
-                    ->visible(fn(Submission $record) => $record->status === Submission::STATUS_DRAFT)
+                    ->visible(function (Submission $record) {
+                        $user = Auth::user();
+
+                        // Bisa ajukan jika masih draft
+                        if ($record->status === Submission::STATUS_DRAFT) {
+                            return true;
+                        }
+
+                        // Bisa ajukan ulang jika dikembalikan dan ini pengusul asli
+                        if ($record->status === Submission::STATUS_DIKEMBALIKAN && $user && $user->id === $record->user_id) {
+                            return true;
+                        }
+
+                        return false;
+                    })
                     ->action(function (Submission $record) {
                         // Eager load relationships untuk menghindari N+1 query
                         $record->loadMissing(['kpType', 'documents', 'region']);

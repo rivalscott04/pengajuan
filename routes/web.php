@@ -154,5 +154,23 @@ Route::middleware(['auth'])->group(function () {
         
         return response()->download($path, basename($document->path));
     })->name('submission.document.download');
+
+    Route::post('/submission/document/{document}/toggle-verification', function (\App\Models\SubmissionDocument $document) {
+        $user = auth()->user();
+        $submission = $document->submission;
+
+        // Hanya operator kanwil (dan admin opsional) yang boleh memverifikasi dokumen
+        if (! $user->hasRole('operator_kanwil') && ! $user->hasRole('admin')) {
+            abort(403, 'Anda tidak memiliki akses untuk memverifikasi dokumen ini.');
+        }
+
+        $document->is_verified = ! $document->is_verified;
+        $document->save();
+
+        return response()->json([
+            'success' => true,
+            'is_verified' => $document->is_verified,
+        ]);
+    })->name('submission.document.toggleVerification');
 });
 

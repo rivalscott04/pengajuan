@@ -1,20 +1,48 @@
 @props(['documents', 'requirements'])
 
-<div x-data="pdfViewer()" class="space-y-4">
+@php
+    $canVerify = auth()->user()?->hasRole('operator_kanwil');
+
+    $documentMeta = $documents->map(function ($doc) use ($requirements) {
+        $label = $requirements[$doc->document_type]['label'] ?? $doc->document_type;
+        $isPdf = str_ends_with(strtolower($doc->path), '.pdf');
+
+        return [
+            'id' => $doc->id,
+            'label' => $label,
+            'is_pdf' => $isPdf,
+            'is_verified' => (bool) ($doc->is_verified ?? false),
+            'download_url' => route('submission.document.download', ['document' => $doc->id]),
+            'toggle_url' => route('submission.document.toggleVerification', ['document' => $doc->id]),
+        ];
+    })->values();
+@endphp
+
+<div x-data="pdfViewer(@js($documentMeta), @js($canVerify))" class="space-y-4">
     {{-- Document Tabs --}}
     <div class="flex flex-wrap gap-2 border-b border-gray-200 dark:border-gray-700 pb-3">
         @foreach($documents as $index => $doc)
-            @php
-                $label = $requirements[$doc->document_type]['label'] ?? $doc->document_type;
-                $isPdf = str_ends_with(strtolower($doc->path), '.pdf');
-            @endphp
             <button 
                 type="button"
-                @click="activeTab = {{ $index }}; loadPdf('{{ route('submission.document.download', ['document' => $doc->id]) }}', {{ $isPdf ? 'true' : 'false' }})"
+                @click="selectDocument({{ $index }})"
                 :class="activeTab === {{ $index }} ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'"
                 class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
             >
-                {{ $label }}
+                <span class="flex items-center gap-2">
+                    <span>{{ $requirements[$doc->document_type]['label'] ?? $doc->document_type }}</span>
+                    <span 
+                        class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold"
+                        :class="documents[{{ $index }}]?.is_verified 
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' 
+                            : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300'"
+                    >
+                        <span 
+                            class="w-1.5 h-1.5 rounded-full mr-1.5"
+                            :class="documents[{{ $index }}]?.is_verified ? 'bg-green-500' : 'bg-yellow-500'"
+                        ></span>
+                        <span x-text="documents[{{ $index }}]?.is_verified ? 'Terverifikasi' : 'Belum diverifikasi'"></span>
+                    </span>
+                </span>
             </button>
         @endforeach
     </div>
@@ -47,7 +75,29 @@
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                     </button>
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-4">
+                    <div x-show="documents.length > 0 && canVerify" class="flex items-center gap-2">
+                        <span 
+                            class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold"
+                            :class="documents[activeTab]?.is_verified 
+                                ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' 
+                                : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300'"
+                        >
+                            <span 
+                                class="w-2 h-2 rounded-full mr-1.5"
+                                :class="documents[activeTab]?.is_verified ? 'bg-green-500' : 'bg-yellow-500'"
+                            ></span>
+                            <span x-text="documents[activeTab]?.is_verified ? 'Terverifikasi' : 'Belum diverifikasi'"></span>
+                        </span>
+                        <button
+                            type="button"
+                            @click="toggleVerification()"
+                            class="inline-flex items-center px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-xs font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        >
+                            <span x-text="documents[activeTab]?.is_verified ? 'Batalkan Verifikasi' : 'Tandai Terverifikasi'"></span>
+                        </button>
+                    </div>
+                    <div class="flex items-center gap-2">
                     <button type="button" @click="zoomOut()" class="p-2 rounded hover:bg-gray-300 dark:hover:bg-gray-600">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7"></path></svg>
                     </button>
@@ -90,8 +140,10 @@
     // Set worker source
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     
-    function pdfViewer() {
+    function pdfViewer(initialDocuments = [], canVerify = false) {
         return {
+            documents: initialDocuments,
+            canVerify: canVerify,
             activeTab: 0,
             loading: true,
             isPdf: true,
@@ -103,13 +155,46 @@
             
             init() {
                 // Load first document on init
-                @if($documents->count() > 0)
-                    @php $firstDoc = $documents->first(); @endphp
-                    this.loadPdf(
-                        '{{ route('submission.document.download', ['document' => $firstDoc->id]) }}',
-                        {{ str_ends_with(strtolower($firstDoc->path), '.pdf') ? 'true' : 'false' }}
-                    );
-                @endif
+                if (this.documents.length > 0) {
+                    this.selectDocument(0);
+                }
+            },
+
+            async selectDocument(index) {
+                if (!this.documents[index]) return;
+
+                this.activeTab = index;
+                const doc = this.documents[index];
+                await this.loadPdf(doc.download_url, doc.is_pdf);
+            },
+
+            async toggleVerification() {
+                if (!this.canVerify || !this.documents.length) return;
+
+                const doc = this.documents[this.activeTab];
+                if (!doc || !doc.toggle_url) return;
+
+                try {
+                    const token = document.querySelector('meta[name=\"csrf-token\"]')?.getAttribute('content');
+
+                    const response = await fetch(doc.toggle_url, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': token ?? '',
+                            'Accept': 'application/json',
+                        },
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Gagal menyimpan status verifikasi dokumen.');
+                    }
+
+                    const data = await response.json();
+                    doc.is_verified = !!data.is_verified;
+                } catch (error) {
+                    console.error(error);
+                    alert('Gagal mengubah status verifikasi dokumen.');
+                }
             },
             
             async loadPdf(url, isPdfFile) {
