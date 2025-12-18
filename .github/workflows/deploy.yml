@@ -35,7 +35,7 @@ jobs:
             
             # Masuk ke direktori project
             echo "📁 Masuk ke direktori project..."
-            cd /path/to/your/project || exit 1
+            cd /var/www/pengajuan || exit 1
             echo "✅ Sudah di direktori project"
             echo ""
             
