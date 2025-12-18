@@ -1,0 +1,22 @@
+<?php
+
+namespace App\Filament\Resources\AuditLogResource\Pages;
+
+use App\Filament\Resources\AuditLogResource;
+use Filament\Resources\Pages\ListRecords;
+
+class ListAuditLogs extends ListRecords
+{
+    protected static string $resource = AuditLogResource::class;
+
+    public function getTitle(): string
+    {
+        return 'Audit Log';
+    }
+
+    public function getHeading(): string
+    {
+        return 'Audit Log';
+    }
+}
+

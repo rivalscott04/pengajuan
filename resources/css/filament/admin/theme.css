@@ -1,0 +1,21 @@
+@import url('../../../public/css/filament/filament/app.css');
+
+:root {
+    --filament-color-primary-500: #059669;
+    --filament-color-primary-600: #047857;
+    --filament-color-primary-700: #065f46;
+}
+
+.fi-login {
+    background: radial-gradient(circle at 20% 20%, #ecfeff 0, #ecfeff 30%, #f8fafc 70%);
+}
+
+.fi-sidebar {
+    box-shadow: 1px 0 12px rgba(0, 0, 0, 0.05);
+}
+
+.fi-topbar .fi-brand {
+    font-weight: 700;
+    letter-spacing: 0.01em;
+}
+
