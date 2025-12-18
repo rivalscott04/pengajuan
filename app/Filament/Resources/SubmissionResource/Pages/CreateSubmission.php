@@ -25,6 +25,12 @@ class CreateSubmission extends CreateRecord
     {
         $data['user_id'] = Auth::id();
         
+        // Pastikan operator_kabkota tidak bisa ubah region_id
+        // Force region_id sesuai dengan user yang login
+        if (Auth::user()?->hasRole('operator_kabkota')) {
+            $data['region_id'] = Auth::user()->region_id;
+        }
+        
         return $data;
     }
 

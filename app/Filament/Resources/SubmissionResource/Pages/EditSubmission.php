@@ -5,6 +5,7 @@ namespace App\Filament\Resources\SubmissionResource\Pages;
 use App\Filament\Resources\SubmissionResource;
 use App\Models\Submission;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Support\Facades\Auth;
 
 class EditSubmission extends EditRecord
 {
@@ -26,6 +27,17 @@ class EditSubmission extends EditRecord
             ->mapWithKeys(fn($doc) => [$doc->document_type => $doc->path])
             ->toArray();
 
+        return $data;
+    }
+
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        // Pastikan operator_kabkota tidak bisa ubah region_id
+        // Force region_id sesuai dengan record yang sudah ada atau user yang login
+        if (Auth::user()?->hasRole('operator_kabkota')) {
+            $data['region_id'] = $this->record->region_id ?? Auth::user()->region_id;
+        }
+        
         return $data;
     }
 
