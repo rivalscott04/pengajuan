@@ -10,6 +10,7 @@ class KpTypeSeeder extends Seeder
     public function run(): void
     {
         $types = [
+            // KP Reguler
             [
                 'name' => 'Kenaikan Pangkat Reguler',
                 'code' => 'reguler',
@@ -28,19 +29,39 @@ class KpTypeSeeder extends Seeder
                     ],
                 ],
             ],
+            // Penyematan Gelar S1
             [
-                'name' => 'Kenaikan Pangkat Pilihan',
-                'code' => 'pilihan',
+                'name' => 'Penyematan Gelar S1',
+                'code' => 'gelar_s1',
                 'document_requirements' => [
                     [
-                        'key' => 'sk_jabatan',
-                        'label' => 'SK Jabatan',
+                        'key' => 'ijazah_s1',
+                        'label' => 'Ijazah S1',
                         'max_size' => 5 * 1024 * 1024,
                         'mimes' => ['pdf'],
                     ],
                     [
-                        'key' => 'sertifikat_diklat',
-                        'label' => 'Sertifikat Diklat',
+                        'key' => 'transkrip_nilai_s1',
+                        'label' => 'Transkrip Nilai S1',
+                        'max_size' => 5 * 1024 * 1024,
+                        'mimes' => ['pdf'],
+                    ],
+                ],
+            ],
+            // Penyematan Gelar S2
+            [
+                'name' => 'Penyematan Gelar S2',
+                'code' => 'gelar_s2',
+                'document_requirements' => [
+                    [
+                        'key' => 'ijazah_s2',
+                        'label' => 'Ijazah S2',
+                        'max_size' => 5 * 1024 * 1024,
+                        'mimes' => ['pdf'],
+                    ],
+                    [
+                        'key' => 'transkrip_nilai_s2',
+                        'label' => 'Transkrip Nilai S2',
                         'max_size' => 5 * 1024 * 1024,
                         'mimes' => ['pdf'],
                     ],
@@ -56,6 +77,7 @@ class KpTypeSeeder extends Seeder
         }
     }
 }
+
 
 
 
